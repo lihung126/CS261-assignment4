@@ -4,19 +4,34 @@
  * you need in this file to implement a priority queue.  Make sure to add your
  * name and @oregonstate.edu email address below:
  *
- * Name:
- * Email:
+ * Name: Li Hung Chen
+ * Email:chenlih@oregonstate.edu
  */
 
 #include <stdlib.h>
-
+#include <stdio.h>
+#include <assert.h>
+#include "dynarray.h"
 #include "pq.h"
 
+#define PARENT_IDX(i) ((i-1)/2)
+#define LEFTCHILD_IDX(i) ((i*2)+1)
+#define RIGHTCHILD_IDX(i) ((i*2)+2)
 /*
  * This is the structure that represents a priority queue.  You must define
  * this struct to contain the data needed to implement a priority queue.
  */
-struct pq;
+struct pq{
+	struct dynarray* pqarr;
+	
+};
+
+
+
+struct pqelement {
+  int priority;
+  void* val;
+};
 
 
 /*
@@ -24,7 +39,11 @@ struct pq;
  * return a pointer to it.
  */
 struct pq* pq_create() {
-  return NULL;
+  struct pq* pqc=malloc(sizeof(struct pq));
+  assert(pqc);
+  pqc->	pqarr= dynarray_create();
+  
+  return pqc;
 }
 
 
@@ -37,7 +56,9 @@ struct pq* pq_create() {
  *   pq - the priority queue to be destroyed.  May not be NULL.
  */
 void pq_free(struct pq* pq) {
-
+assert(pq);
+dynarray_free(pq->pqarr);
+free(pq);
 }
 
 
@@ -53,8 +74,11 @@ void pq_free(struct pq* pq) {
  *   Should return 1 if pq is empty and 0 otherwise.
  */
 int pq_isempty(struct pq* pq) {
-  return 1;
+  if (dynarray_size(pq->pqarr)==0) return 1;
+  
+  else return 0;
 }
+
 
 
 /*
@@ -74,8 +98,35 @@ int pq_isempty(struct pq* pq) {
  *     the element in the priority queue with the LOWEST priority value should
  *     be the FIRST one returned.
  */
+ 
 void pq_insert(struct pq* pq, void* value, int priority) {
+assert(pq);
 
+  struct pqelement *pqi = malloc(sizeof(struct pqelement));
+  pqi->val = value;
+  pqi->priority = priority;
+
+  int index = 0;
+
+  dynarray_insert(pq->pqarr, -1, pqi);
+  index = dynarray_size(pq->pqarr) - 1;
+  int p_index = (index - 1) / 2;
+
+  struct pqelement *parent_e;
+  struct pqelement *child_e;
+  while (index > 0) {
+    parent_e = dynarray_get(pq->pqarr, p_index);
+    child_e = dynarray_get(pq->pqarr, index);
+    if ((parent_e->priority) > (pqi->priority)) {
+      struct element *tmp = dynarray_get(pq->pqarr, index);     // swap
+      dynarray_set(pq->pqarr, index, parent_e);
+      dynarray_set(pq->pqarr, p_index, tmp);
+
+    } else
+      break;
+    index = p_index;
+    p_index = (index - 1) / 2;
+  }
 }
 
 
@@ -92,7 +143,12 @@ void pq_insert(struct pq* pq, void* value, int priority) {
  *   LOWEST priority value.
  */
 void* pq_first(struct pq* pq) {
-  return NULL;
+assert(pq);
+assert(dynarray_size(pq->pqarr)>0);
+
+struct pqelement *ele=dynarray_get(pq->pqarr,0);
+
+	return ele->val;
 }
 
 
@@ -109,7 +165,13 @@ void* pq_first(struct pq* pq) {
  *   with LOWEST priority value.
  */
 int pq_first_priority(struct pq* pq) {
-  return 0;
+ assert(pq);
+ assert(dynarray_size(pq->pqarr)>0);
+ 
+ struct pqelement* pqfp=dynarray_get(pq->pqarr,0);
+
+	return pqfp->priority;
+
 }
 
 
@@ -126,6 +188,57 @@ int pq_first_priority(struct pq* pq) {
  *   Should return the value of the first item in pq, i.e. the item with
  *   LOWEST priority value.
  */
+ 
+
+ 
 void* pq_remove_first(struct pq* pq) {
-  return NULL;
+assert(pq);
+assert(dynarray_size(pq->pqarr)>0);
+
+struct pqelement *eleL=dynarray_get(pq->pqarr,-1);
+struct pqelement *eleF=dynarray_get(pq->pqarr,0);
+
+dynarray_set(pq->pqarr,0,eleL);
+dynarray_remove(pq->pqarr,-1);
+
+  int index = 0;
+  int mIdx = dynarray_size(pq->pqarr) - 1;
+  int left_Idx = LEFTCHILD_IDX(index);
+  int right_Idx = RIGHTCHILD_IDX(index);
+
+  struct pqelement *left_child;
+  struct pqelement *right_child;
+  struct pqelement *cur_e;
+
+  while (mIdx > left_Idx || mIdx > right_Idx) {
+    cur_e = dynarray_get(pq->pqarr, index);
+    left_child = dynarray_get(pq->pqarr, left_Idx);
+    right_child = dynarray_get(pq->pqarr, right_Idx);
+
+    if (cur_e->priority > left_child->priority || cur_e->priority > right_child->priority) {
+      if (right_child->priority >= left_child->priority) {
+   
+        struct pqelement *tmp = cur_e;
+        dynarray_set(pq->pqarr, index, left_child);
+        dynarray_set(pq->pqarr, 2 * index + 1, tmp);
+        index = 2 * index + 1;
+
+      } else {
+
+        struct pqelement *tmp = cur_e;
+        dynarray_set(pq->pqarr, index, right_child);
+        dynarray_set(pq->pqarr, 2 * index + 2, tmp);
+        index = 2 * index + 2;
+      }
+    } else {
+      index = mIdx;
+    }
+    left_Idx = LEFTCHILD_IDX(index);
+    right_Idx = RIGHTCHILD_IDX(index);
+  }
+
+
+void *val=eleF->val;
+free(eleF);
+return val;
 }
